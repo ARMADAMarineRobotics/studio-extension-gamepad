@@ -1,0 +1,95 @@
+{
+    "name": "Sony PlayStation 3",
+    "button": [
+        {
+            "button": "CROSS",
+            "index": 0
+        },
+        {
+            "button": "CIRCLE",
+            "index": 1
+        },
+        {
+            "button": "SQUARE",
+            "index": 2
+        },
+        {
+            "button": "TRIANGLE",
+            "index": 3
+        },
+        {
+            "button": "L",
+            "index": 4
+        },
+        {
+            "button": "R",
+            "index": 5
+        },
+        {
+            "button": "L2",
+            "index": 6
+        },
+        {
+            "button": "R2",
+            "index": 7
+        },
+        {
+            "button": "SELECT",
+            "index": 8
+        },
+        {
+            "button": "START",
+            "index": 9
+        },
+        {
+            "button": "L3",
+            "index": 10
+        },
+        {
+            "button": "R3",
+            "index": 11
+        },
+        {
+            "button": "UP",
+            "index": 12
+        },
+        {
+            "button": "DOWN",
+            "index": 13
+        },
+        {
+            "button": "LEFT",
+            "index": 14
+        },
+        {
+            "button": "RIGHT",
+            "index": 15
+        },
+        {
+            "button": "PS",
+            "index": 16
+        }
+    ],
+    "directional": [
+        {
+            "axes": [
+                0,
+                1
+            ],
+            "deadzone": 0.25,
+            "dpad": false,
+            "cpad": false
+        },
+        {
+            "axes": [
+                2,
+                3
+            ],
+            "deadzone": 0.25,
+            "dpad": false,
+            "cpad": false
+        }
+    ],
+    "trigger": [],
+    "triggerFixed": []
+}

@@ -1,0 +1,12 @@
+{
+	"id":"ojd-sony-playstation",
+	"name":"Sony Playstation",
+	"author":"Anthony Mattera (KernelZechs)",
+	"version":"1.0",
+	"copyright":"Copyright 2019 Anthony Mattera (KernelZechs), Open Joystick Display",
+	"license":"BSD 4-Clause Attribution",
+	"website":"https://ojdproject.com",
+	"styles":[
+		{"id":"analog-black", 	"name":"Analog Black", 	"file":"theme-analog-black.html", 	"mastercss":"theme-analog-black.css"}
+	]
+}
