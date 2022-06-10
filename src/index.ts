@@ -1,6 +1,9 @@
 import { ExtensionContext } from "@foxglove/studio";
-import { initExamplePanel } from "./ExamplePanel";
+import { initGamepadPanel } from "./GamepadPanel";
 
 export function activate(extensionContext: ExtensionContext) {
-  extensionContext.registerPanel({ name: "example-panel", initPanel: initExamplePanel });
+    extensionContext.registerPanel({
+        name: "Gamepad",
+        initPanel: initGamepadPanel 
+    });
 }

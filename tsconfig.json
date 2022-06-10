@@ -1,10 +1,21 @@
 {
   "extends": "@foxglove/fox/tsconfig/tsconfig.json",
 
-  "include": ["./src/**/*"],
+  "include": [
+    "./src/**/*",
+
+    // XXX
+    // This should be a subset of the files matched by the above glob pattern,
+    // but TypeScript 4.6.4 seems to need this specified explicitly, even with
+    // the resolveJsonModule compiler option enabled.
+    "./src/**/*.json"
+  ],
+
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
+
+    "lib": ["dom"],
 
     // Additional TypeScript error reporting checks are enabled by default to improve code quality.
     // Enable/disable these checks as necessary to suit your coding preferences or work with
@@ -13,8 +24,8 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    //"noUnusedLocals": true,
+    //"noUnusedParameters": true,
     "forceConsistentCasingInFileNames": true
   }
 }
