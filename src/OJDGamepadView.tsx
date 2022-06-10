@@ -38,16 +38,39 @@ export function OJDGamepadView(props: OJDGamepadViewProps): JSX.Element {
         // el.appendChild(svg);
     });
 
-    // After the first render, find all of the 
+    // Update the view to reflect the current state of the gamepad
     useEffect(() => {
-        const circle = props.mapping.buttons.find((button) => (button.name === 'CIRCLE'));
-        if (circle) {
-            if (props.gamepad.buttons[circle.index]?.pressed) {
-                viewRef.current?.querySelector(`*[ojd-button='CIRCLE']`)?.classList.add("active");
-            } else {
-                viewRef.current?.querySelector(`*[ojd-button='CIRCLE']`)?.classList.remove("active");
+        props.mapping.buttons.forEach((button) => {
+            viewRef.current
+                ?.querySelectorAll(`*[ojd-button='${button.name}']`)
+                .forEach((element) => {
+                    const pressed = (
+                        props.gamepad.buttons[button.index]?.pressed
+                    );
+                    element.classList.toggle("active", pressed);
+                });
+        });
+
+        props.mapping.directionals.forEach((directional, i) => {
+            let x = props.gamepad.axes[directional.x];
+            let y = props.gamepad.axes[directional.y];
+            if (!x || !y)
+                return;
+
+            // Act as though inactive within the deadzone
+            const active = (Math.sqrt(x*x + y*y) >= directional.deadzone);
+            if (!active) {
+                x = y = 0;
             }
-        }
+
+            viewRef.current?.querySelectorAll(`*[ojd-directional='${i}']`)
+                .forEach((e) => {
+                    const element = (e as HTMLElement | SVGElement);
+                    element.classList.toggle("active", active);
+                    element.style.top = `${(y!+1.0)*50}%`;
+                    element.style.left = `${(x!+1.0)*50}%`;
+                });
+        });
     }, [props.gamepad, props.mapping]);
 
     return (
