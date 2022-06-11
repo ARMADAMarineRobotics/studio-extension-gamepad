@@ -1,4 +1,4 @@
-import { Time } from "@foxglove/rostime";
+import { fromDate } from "@foxglove/rostime";
 import { PanelExtensionContext, RenderState, Topic, MessageEvent } from "@foxglove/studio";
 import { produce } from "immer";
 import { get, isEqual, set } from "lodash";
@@ -9,7 +9,7 @@ import NoControllerImage from "./images/no-controller.svg";
 
 import DefaultPlaystation3Mapping from "./open-joystick-display/mappings/sony-playstation-3.json";
 
-import { ButtonMapping, DirectionalMapping, GamepadMapping } from "./mapping";
+import { DirectionalMapping, GamepadMapping, Joy } from "./types";
 
 import { GamepadListener } from "./GamepadListener";
 import { OJDGamepadView } from "./OJDGamepadView";
@@ -23,24 +23,6 @@ type SettingsTreeNode = any;
 type SettingsTreeRoots = any;
 
 
-// std_msgs/Header message definition
-// https://docs.ros.org/en/api/std_msgs/html/msg/Header.html
-type Header = {
-    frame_id: string;
-    stamp: Time;
-    seq: number;
-};
-
-
-// sensor_msgs/Joy message definition
-// http://docs.ros.org/en/api/sensor_msgs/html/msg/Joy.html
-type Joy = {
-    header: Header;
-    axes: number[];
-    buttons: number[];
-};
-
-
 type PanelProps = {
     context: PanelExtensionContext
 };
@@ -48,6 +30,7 @@ type PanelProps = {
 
 
 type Config = {
+    topic: string;
     theme: string;
     // TODO: Separate theme and style using OJD nomenclature
     mapping_name: string;
@@ -140,9 +123,22 @@ function getNextAxisIndex(config: Config): number {
 }
 
 
-function buildSettingsTree(config: Config): SettingsTreeRoots {
+function buildSettingsTree(
+    config: Config,
+    readonly: boolean,
+    topics?: Topic[],
+): SettingsTreeRoots {
     const generalFields: SettingsTreeFields = {
-        // TODO: The topic to publish/subscribe to
+        topic: {
+            label: "Topic",
+            input: (readonly ? "select" : "string"),
+            value: config.topic,
+            options: (readonly ? topics!.map((topic) => ({
+                label: topic.name,
+                value: topic.name,
+            })) : null),
+            error: (!config.topic ? "Topic name is empty" : null),
+        },
 
         theme: {
             label: "Theme",
@@ -302,19 +298,26 @@ function buildSettingsTree(config: Config): SettingsTreeRoots {
 
 function GamepadPanel({ context }: PanelProps): JSX.Element {
     const [gamepad, setGamepad] = useState<Gamepad | undefined>();
+    const [joy, setJoy] = useState<Joy | undefined>();
+    const [seq, setSeq] = useState<number>(0);
 
     const [topics, setTopics] = useState<readonly Topic[] | undefined>();
+    const [usedTopic, setUsedTopic] = useState<string | undefined>();
     const [messages, setMessages] = useState<readonly MessageEvent<unknown>[] | undefined>();
     
     const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
     const [config, setConfig] = useState<Config>(() => {
         const config = context.initialState as Partial<Config>;
-        config.theme = config.theme ?? "ps3-analog-black";
+        config.topic ??= "/joy";
+        config.theme ??= "ps3-analog-black";
         config.mapping_name ??= "Sony PlayStation 3";
         config.mapping ??= loadOJDMapping(config.mapping_name);
         return config as Config;
     });
+
+    // Determine if we are attached to a player on which we can publish events
+    const isReadonly = ("publish" in context);
 
     // Persist the config each time it is modified
     useEffect(() => {
@@ -374,6 +377,12 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
         if (action.action === "update") {
             const { path, value } = action.payload;
 
+            if (path[0] === "general" && ["topic", "theme"].includes(path[1])) {
+                setConfig((oldConfig) => produce(oldConfig, (draft) => {
+                    set(draft, path.slice(1), value);
+                }));
+            }
+
             if (isEqual(path, ["general", "mapping"])) {
                 if (value === "custom") {
                     setConfig((oldConfig) => produce(oldConfig, (draft) => {
@@ -404,13 +413,17 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
 
     // Register the settings tree
     useEffect(() => {
+        const joyTopics = (topics ?? []).filter(
+            (topic) => (topic.datatype === "sensor_msgs/Joy")
+        );
+
         (
           context as unknown as EXPERIMENTAL_PanelExtensionContextWithSettings
         ).__updatePanelSettingsTree({
           actionHandler: settingsActionHandler,
-          roots: buildSettingsTree(config),
+          roots: buildSettingsTree(config, isReadonly, joyTopics),
         });
-      }, [config, context, settingsActionHandler]);
+      }, [config, context, isReadonly, settingsActionHandler, topics]);
 
     // We use a layout effect to setup render handling for our panel. We also setup some topic subscriptions.
     useLayoutEffect(() => {
@@ -446,31 +459,77 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
         // tell the panel context we want messages for the current frame for topics we've subscribed to
         // This corresponds to the _currentFrame_ field of render state.
         context.watch("currentFrame");
-        
-        // subscribe to some topics, you could do this within other effects, based on input fields, etc
-        // Once you subscribe to topics, currentFrame will contain message events from those topics (assuming there are messages).
-        context.subscribe(["/some/topic"]);
     }, []);
     
+    // Advertise the relevant topic when in a live session
+    useEffect(() => {
+        if (!isReadonly) {
+            setUsedTopic((oldTopic) => {
+                if (oldTopic)
+                    context.unadvertise?.(oldTopic);
+                context.advertise?.(config.topic, "sensor_msgs/Joy");
+                return config.topic;
+            });
+        }
+    }, [config.topic, context, isReadonly]);
+
+    // Or subscribe to the relevant topic when in a recorded session
+    useEffect(() => {
+        if (isReadonly) {
+            setUsedTopic((_oldTopic) => {
+                context.subscribe([ config.topic ]);
+                return config.topic;
+            });
+        }
+    }, [config.topic, context, isReadonly]);
+
+    // If subscribing
+    useEffect(() => {
+        const latestJoy = (messages?.[messages?.length - 1]?.message as Joy);
+        if (latestJoy)
+            setJoy(latestJoy);
+    }, [messages]);
+
     // Invoke the done callback once the render is complete
     useEffect(() => {
         renderDone?.();
     }, [renderDone]);
     
 
-    {{/*
-    
-    */}}
+    const gamepadListener = (
+        <GamepadListener
+            onConnect={(gp: Gamepad) => {
+                if (!gamepad) setGamepad(gp);
+            }}
+            onDisconnect={(gp: Gamepad) => {
+                if (gamepad?.id === gp.id) {
+                    setGamepad(undefined);
+                    setJoy(undefined);
+                }
+            }}
+            onUpdate={(gp: Gamepad) => {
+                if (gamepad?.id === gp.id) {
+                    setJoy({
+                        header: {
+                            frame_id: gp.id,
+                            stamp: fromDate(new Date()),  // TODO: /clock
+                            seq,
+                        },
+                        axes: [...gp.axes],
+                        buttons: gp.buttons.map(
+                            (button) => (button.pressed ? 1 : 0)
+                        ),
+                    });
+                    setSeq(seq + 1);
+                }
+            }}
+        />
+    );
 
     return (
         <>
-            <GamepadListener
-                onConnect={(gamepad: Gamepad) => console.log("connected!") }
-                onDisconnect={(gamepad: Gamepad) => console.log("disconnected!") }
-                onUpdate={(gamepad: Gamepad) => { setGamepad(gamepad); }}
-            />
-            { gamepad ?
-                <OJDGamepadView gamepad={gamepad} mapping={config.mapping} /> :
+            { joy ?
+                <OJDGamepadView gamepad={joy} mapping={config.mapping} /> :
                 <div dangerouslySetInnerHTML={{ __html: NoControllerImage }} /> /* FIXME */
             }
         </>

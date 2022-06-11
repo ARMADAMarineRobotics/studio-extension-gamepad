@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 
-import { GamepadMapping } from "./mapping";
+import { GamepadMapping, Joy } from "./types";
 
 
 import gamepadImage from "./open-joystick-display/themes/ojd-sony-playstation/images/analog-black.svg";
@@ -17,7 +17,7 @@ const styleInfo = themeInfo.styles[0];
 
 type OJDGamepadViewProps = {
     // TODO theme, style
-    gamepad: Gamepad;
+    gamepad: Joy;
     mapping: GamepadMapping;
 };
 
@@ -45,7 +45,7 @@ export function OJDGamepadView(props: OJDGamepadViewProps): JSX.Element {
                 ?.querySelectorAll(`*[ojd-button='${button.name}']`)
                 .forEach((element) => {
                     const pressed = (
-                        props.gamepad.buttons[button.index]?.pressed
+                        (props.gamepad.buttons[button.index] ?? 0) > 0
                     );
                     element.classList.toggle("active", pressed);
                 });
