@@ -7,7 +7,7 @@ export function useGamepad(
         didDisconnect: (gamepad: Gamepad) => void,
         didUpdate: (gamepad: Gamepad) => void,
     }
-) {
+): void {
     // MDN says that valid request IDs are non-zero, so we use zero to indicate
     // that there is no pending animation request.
     const animationRequestId = useRef<number>(0);
@@ -16,7 +16,7 @@ export function useGamepad(
         let gamepadCount = 0;
 
         for (const gamepad of navigator.getGamepads()) {
-            if (gamepad === null) continue;
+            if (gamepad == null) continue;
             didUpdate(gamepad);
             gamepadCount ++;
         }

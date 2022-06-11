@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import ReactDOM from "react-dom";
+import { useEffect, useRef } from "react";
 
 import { GamepadMapping, Joy } from "../types";
 
@@ -54,7 +53,7 @@ export function OJDGamepadView(props: OJDGamepadViewProps): JSX.Element {
         props.mapping.directionals.forEach((directional, i) => {
             let x = props.gamepad.axes[directional.x];
             let y = props.gamepad.axes[directional.y];
-            if (!x || !y)
+            if (x == undefined || y == undefined)
                 return;
 
             // Act as though inactive within the deadzone

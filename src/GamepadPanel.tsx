@@ -2,7 +2,7 @@ import { fromDate } from "@foxglove/rostime";
 import { PanelExtensionContext, RenderState, Topic, MessageEvent } from "@foxglove/studio";
 import { produce } from "immer";
 import { get, isEqual, set } from "lodash";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom";
 
 import NoControllerImage from "./images/no-controller.svg";
@@ -18,15 +18,17 @@ import { ScaleToFit } from "./components/ScaleToFit";
 
 
 // FIXME Use the public extension API when available
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type EXPERIMENTAL_PanelExtensionContextWithSettings = any;
 type SettingsTreeAction = any;
 type SettingsTreeFields = any;
 type SettingsTreeNode = any;
 type SettingsTreeRoots = any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 
 type PanelProps = {
-    context: PanelExtensionContext
+    context: PanelExtensionContext;
 };
 
 
@@ -64,45 +66,45 @@ function loadOJDMapping(name: string): GamepadMapping {
 // Finds button indices that have multiple mappings
 function getButtonIndexConflicts(config: Config): number[] {
     // Count the number of times each index is used
-    let usedIndices: Record<number, number> = {};
-    config.mapping.buttons.forEach((button, i) => {
+    const usedIndices: Record<number, number> = {};
+    config.mapping.buttons.forEach((button) => {
         usedIndices[button.index] = (usedIndices[button.index] ?? 0) + 1;
     });
 
     // Return only the ones that are used more than once
     return Object.entries(usedIndices)
-        .filter(([k, v]) => (v > 1))
-        .map(([k, v]) => parseInt(k));
+        .filter(([_k, v]) => (v > 1))
+        .map(([k, _v]) => parseInt(k));
 }
 
 // Finds button names that have multiple mappings
 function getButtonNameConflicts(config: Config): string[] {
     // Count the number of times each name is used
-    let usedNames: Record<string, number> = {};
-    config.mapping.buttons.forEach((button, i) => {
+    const usedNames: Record<string, number> = {};
+    config.mapping.buttons.forEach((button) => {
         usedNames[button.name] = (usedNames[button.name] ?? 0) + 1;
     });
 
     // Return only the ones that are used more than once
     return Object.entries(usedNames)
-        .filter(([k, v]) => (v > 1))
-        .map(([k, v]) => k);
+        .filter(([_k, v]) => (v > 1))
+        .map(([k, _v]) => k);
 }
 
 
 // Finds axis indices that have multiple mappings
 function getAxisConflicts(config: Config): number[] {
     // Count the number of times each index is used
-    let usedIndices: Record<number, number> = {};
-    config.mapping.directionals.forEach((button, i) => {
+    const usedIndices: Record<number, number> = {};
+    config.mapping.directionals.forEach((button) => {
         usedIndices[button.x] = (usedIndices[button.x] ?? 0) + 1;
         usedIndices[button.y] = (usedIndices[button.y] ?? 0) + 1;
     });
 
     // Return only the ones that are used more than once
     return Object.entries(usedIndices)
-        .filter(([k, v]) => (v > 1))
-        .map(([k, v]) => parseInt(k));
+        .filter(([_k, v]) => (v > 1))
+        .map(([k, _v]) => parseInt(k));
 }
 
 
@@ -170,19 +172,19 @@ function buildSettingsTree(
                 {
                     label: "Custom",
                     value: "custom",
-                }
-            ]
+                },
+            ],
         },
-    }
+    };
 
     const buttonIndexConflicts = getButtonIndexConflicts(config);
     const buttonNameConflicts = getButtonNameConflicts(config);
-    let buttonNodes: SettingsTreeNode = {};
+    const buttonNodes: SettingsTreeNode = {};
     config.mapping.buttons.forEach((button, i) => {
         buttonNodes[i] = {
             label: `Button ${button.name}`,
             defaultExpansionState: (
-                button.showInEditor ? "expanded" : "collapsed"
+                (button.showInEditor ?? false) ? "expanded" : "collapsed"
             ),
             actions: [
                 {
@@ -213,17 +215,17 @@ function buildSettingsTree(
                         "Index is used multiple times" : null
                     ),
                 },
-            }
+            },
         };
     });
 
     const axisConflicts = getAxisConflicts(config);
-    let directionalNodes: SettingsTreeNode = {};
+    const directionalNodes: SettingsTreeNode = {};
     config.mapping.directionals.forEach((directional, i) => {
         directionalNodes[i] = {
             label: `Directional ${i+1}`,
             defaultExpansionState: (
-                directional.showInEditor ? "expanded" : "collapsed"
+                (directional.showInEditor ?? false) ? "expanded" : "collapsed"
             ),
             actions: [
                 {
@@ -297,7 +299,7 @@ function buildSettingsTree(
             children: directionalNodes,
         },
     };
-    
+
     return settings;
 }
 
@@ -309,7 +311,7 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
     const [topics, setTopics] = useState<readonly Topic[] | undefined>();
     const [usedTopic, setUsedTopic] = useState<string | undefined>();
     const [messages, setMessages] = useState<readonly MessageEvent<unknown>[] | undefined>();
-    
+
     const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
     const [config, setConfig] = useState<Config>(() => {
@@ -356,7 +358,7 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
                 setConfig((oldConfig) => produce(oldConfig, (draft) => {
                     const newEntry: DirectionalMapping = {
                         x: -1, y: -1, // updated below
-                        deadzone: 0.25, 
+                        deadzone: 0.25,
                         showInEditor: true,
                     }
                     draft.mapping.directionals.push(newEntry);
@@ -396,7 +398,7 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
                             buttons: [],
                             directionals: [],
                         };
-                    }));  
+                    }));
                 } else {
                     setConfig((oldConfig) => produce(oldConfig, (draft) => {
                         draft.mapping_name = value;
@@ -411,7 +413,7 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
                     draft.mapping_name = "custom";
                 }));
             }
-            
+
             return;
         }
     }, []);
@@ -442,21 +444,21 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
             //
             // Set the done callback into a state variable to trigger a re-render.
             setRenderDone(() => done);
-            
+
             // We may have new topics - since we are also watching for messages in the current frame, topics may not have changed
             // It is up to you to determine the correct action when state has not changed.
             setTopics(renderState.topics);
-            
+
             // currentFrame has messages on subscribed topics since the last render call
             setMessages(renderState.currentFrame);
         };
-        
+
         // After adding a render handler, you must indicate which fields from RenderState will trigger updates.
         // If you do not watch any fields then your panel will never render since the panel context will assume you do not want any updates.
-        
+
         // tell the panel context that we care about any update to the _topic_ field of RenderState
         context.watch("topics");
-        
+
         // tell the panel context we want messages for the current frame for topics we've subscribed to
         // This corresponds to the _currentFrame_ field of render state.
         context.watch("currentFrame");
@@ -486,14 +488,16 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
 
     // If subscribing
     useEffect(() => {
-        const latestJoy = (messages?.[messages?.length - 1]?.message as Joy);
+        const latestJoy = (
+            messages?.[messages?.length - 1]?.message as Joy | undefined
+        );
         if (latestJoy)
             setJoy(latestJoy);
     }, [messages]);
 
     useGamepad({
         didConnect: useCallback((gp: Gamepad) => {
-            if (gamepad === undefined) {
+            if (gamepad == undefined) {
                 setGamepad(gp.index);
             }
         }, [gamepad]),
@@ -538,6 +542,6 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
     );
 }
 
-export function initGamepadPanel(context: PanelExtensionContext) {
+export function initGamepadPanel(context: PanelExtensionContext): void {
     ReactDOM.render(<GamepadPanel context={context} />, context.panelElement);
 }

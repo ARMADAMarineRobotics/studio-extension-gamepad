@@ -8,7 +8,7 @@ export function ScaleToFit(
         return new ResizeObserver((entries) => {
             if (entries.length === 0)
                 return;
-            
+
             const wrapper = (entries[0]!.target as HTMLDivElement);
             const content = (wrapper.firstChild! as HTMLDivElement);
 
