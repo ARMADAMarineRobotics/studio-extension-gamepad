@@ -14,6 +14,7 @@ import { DirectionalMapping, GamepadMapping, Joy } from "./types";
 import { useGamepad } from "./hooks/useGamepad";
 
 import { OJDGamepadView } from "./components/OJDGamepadView";
+import { ScaleToFit } from "./components/ScaleToFit";
 
 
 // FIXME Use the public extension API when available
@@ -307,8 +308,6 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
     
     const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
-    const containerRef = useRef<HTMLDivElement>(null);
-
     const [config, setConfig] = useState<Config>(() => {
         const config = context.initialState as Partial<Config>;
         config.topic ??= "/joy";
@@ -524,65 +523,18 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
         }, [gamepad, isReadonly]),
     });
 
-    // Scale the container div to fit the panel
-    // TODO Use a ResizeObserver https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
-    const resizeAnimRequestId = useRef<number>(0);
-    const resizeAnimationFrame = useCallback(() => {
-        // Re-register for the next animation frame
-        resizeAnimRequestId.current = (
-            window.requestAnimationFrame(resizeAnimationFrame)
-        );
-
-        if (!containerRef.current)
-            return;
-
-        // Get the bounds of the container and its parent wrapper
-        const parentDiv = (containerRef.current.parentNode as HTMLDivElement);
-        const { width: ww, height: wh } = parentDiv.getBoundingClientRect()
-        const { width: cw, height: ch } = (
-            containerRef.current.getBoundingClientRect()
-        );
-
-        // Compute scale that fits the parent div at the same aspect ratio
-        let scaleFactor = Math.min(ww / cw, wh / ch);
-
-        // If this doesn't require a modification, leave it be
-        if (Math.abs(scaleFactor - 1.0) <= 0.001)
-            return;
-
-        // Combine with the scale factor that is currently being applied
-        scaleFactor *= parseFloat(
-            containerRef.current.style.transform
-                .match(/scale\(([0-9.]+)\)/)?.[1] ?? "1.0"
-        );
-
-        // Apply the transformation
-        containerRef.current.style.transformOrigin = "center";
-        containerRef.current.style.transform = `scale(${scaleFactor})`;
-    }, []);
-
-    useEffect(() => {
-        window.cancelAnimationFrame(resizeAnimRequestId.current);
-        resizeAnimRequestId.current = (
-            window.requestAnimationFrame(resizeAnimationFrame)
-        );
-        return () => window.cancelAnimationFrame(resizeAnimRequestId.current);
-    }, [resizeAnimationFrame]);
-
     // Invoke the done callback once the render is complete
     useEffect(() => {
         renderDone?.();
     }, [renderDone]);
 
     return (
-        <div style={{width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center"}}>
-            <div ref={containerRef}>
-                { joy ?
-                    <OJDGamepadView gamepad={joy} mapping={config.mapping} /> :
-                    <div dangerouslySetInnerHTML={{ __html: NoControllerImage }} /> /* FIXME */
-                }
-            </div>
-        </div>
+        <ScaleToFit>
+            { joy ?
+                <OJDGamepadView gamepad={joy} mapping={config.mapping} /> :
+                <div dangerouslySetInnerHTML={{ __html: NoControllerImage }} /> /* FIXME */
+            }
+        </ScaleToFit>
     );
 }
 
