@@ -332,7 +332,7 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
                 delete directional.showInEditor;
             });
         }));
-    }, [config]);
+    }, [config, context]);
 
     const settingsActionHandler = useCallback((action: SettingsTreeAction) => {
         if (action.action === "perform-node-action") {
@@ -461,8 +461,8 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
         // tell the panel context we want messages for the current frame for topics we've subscribed to
         // This corresponds to the _currentFrame_ field of render state.
         context.watch("currentFrame");
-    }, []);
-    
+    }, [context]);
+
     // Advertise the relevant topic when in a live session
     useEffect(() => {
         if (!isReadonly) {
