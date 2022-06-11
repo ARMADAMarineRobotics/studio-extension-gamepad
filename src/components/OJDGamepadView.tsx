@@ -1,17 +1,17 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 
-import { GamepadMapping, Joy } from "./types";
+import { GamepadMapping, Joy } from "../types";
 
 
-import gamepadImage from "./open-joystick-display/themes/ojd-sony-playstation/images/analog-black.svg";
+import gamepadImage from "../open-joystick-display/themes/ojd-sony-playstation/images/analog-black.svg";
 
-import "./open-joystick-display/themes/ojd-sony-playstation/theme-analog-black.css";
+import "../open-joystick-display/themes/ojd-sony-playstation/theme-analog-black.css";
 
 
-import themeHtml from "./open-joystick-display/themes/ojd-sony-playstation/theme-analog-black.html";
+import themeHtml from "../open-joystick-display/themes/ojd-sony-playstation/theme-analog-black.html";
 
-import themeInfo from "./open-joystick-display/themes/ojd-sony-playstation/theme.json";
+import themeInfo from "../open-joystick-display/themes/ojd-sony-playstation/theme.json";
 const styleInfo = themeInfo.styles[0];
 
 

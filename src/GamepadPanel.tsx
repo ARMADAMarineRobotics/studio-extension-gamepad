@@ -12,7 +12,8 @@ import DefaultPlaystation3Mapping from "./open-joystick-display/mappings/sony-pl
 import { DirectionalMapping, GamepadMapping, Joy } from "./types";
 
 import { useGamepad } from "./hooks/useGamepad";
-import { OJDGamepadView } from "./OJDGamepadView";
+
+import { OJDGamepadView } from "./components/OJDGamepadView";
 
 
 // FIXME Use the public extension API when available
