@@ -299,7 +299,6 @@ function buildSettingsTree(
 function GamepadPanel({ context }: PanelProps): JSX.Element {
     const [gamepad, setGamepad] = useState<number | undefined>();
     const [joy, setJoy] = useState<Joy | undefined>();
-    const [seq, setSeq] = useState<number>(0);
 
     const [topics, setTopics] = useState<readonly Topic[] | undefined>();
     const [usedTopic, setUsedTopic] = useState<string | undefined>();
@@ -510,21 +509,18 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
             if (isReadonly || gamepad !== gp.index)
                 return;
 
-            // FIXME: Look into useReducer?
-            // You can also replace multiple useState variables with useReducer if 'setJoy' needs the current value of 'seq'
-            setJoy({
+            setJoy((prev) => ({
                 header: {
                     frame_id: gp.id,
                     stamp: fromDate(new Date()),  // TODO: /clock
-                    seq,
+                    seq: (prev?.header.seq ?? -1) + 1,
                 },
                 axes: [...gp.axes],
                 buttons: gp.buttons.map(
                     (button) => (button.pressed ? 1 : 0)
                 ),
-            });
-            setSeq((seq) => seq + 1);
-        }, [gamepad, isReadonly, seq]),
+            }));
+        }, [gamepad, isReadonly]),
     });
 
     // Scale the container div to fit the panel
