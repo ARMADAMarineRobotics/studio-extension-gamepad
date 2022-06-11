@@ -11,7 +11,7 @@ import DefaultPlaystation3Mapping from "./open-joystick-display/mappings/sony-pl
 
 import { DirectionalMapping, GamepadMapping, Joy } from "./types";
 
-import { GamepadListener } from "./GamepadListener";
+import { useGamepad } from "./hooks/useGamepad";
 import { OJDGamepadView } from "./OJDGamepadView";
 
 
@@ -297,7 +297,7 @@ function buildSettingsTree(
 
 
 function GamepadPanel({ context }: PanelProps): JSX.Element {
-    const [gamepad, setGamepad] = useState<Gamepad | undefined>();
+    const [gamepad, setGamepad] = useState<number | undefined>();
     const [joy, setJoy] = useState<Joy | undefined>();
     const [seq, setSeq] = useState<number>(0);
 
@@ -492,41 +492,40 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
             setJoy(latestJoy);
     }, [messages]);
 
-    // Invoke the done callback once the render is complete
-    useEffect(() => {
-        renderDone?.();
-    }, [renderDone]);
-    
+    useGamepad({
+        didConnect: useCallback((gp: Gamepad) => {
+            if (gamepad === undefined) {
+                setGamepad(gp.index);
+            }
+        }, [gamepad]),
 
-    const gamepadListener = (
-        <GamepadListener
-            onConnect={(gp: Gamepad) => {
-                if (!gamepad) setGamepad(gp);
-            }}
-            onDisconnect={(gp: Gamepad) => {
-                if (gamepad?.id === gp.id) {
-                    setGamepad(undefined);
-                    setJoy(undefined);
-                }
-            }}
-            onUpdate={(gp: Gamepad) => {
-                if (gamepad?.id === gp.id) {
-                    setJoy({
-                        header: {
-                            frame_id: gp.id,
-                            stamp: fromDate(new Date()),  // TODO: /clock
-                            seq,
-                        },
-                        axes: [...gp.axes],
-                        buttons: gp.buttons.map(
-                            (button) => (button.pressed ? 1 : 0)
-                        ),
-                    });
-                    setSeq(seq + 1);
-                }
-            }}
-        />
-    );
+        didDisconnect: useCallback((gp: Gamepad) => {
+            if (gamepad === gp.index) {
+                setGamepad(undefined);
+                setJoy(undefined);
+            }
+        }, [gamepad]),
+
+        didUpdate: useCallback((gp: Gamepad) => {
+            if (isReadonly || gamepad !== gp.index)
+                return;
+
+            // FIXME: Look into useReducer?
+            // You can also replace multiple useState variables with useReducer if 'setJoy' needs the current value of 'seq'
+            setJoy({
+                header: {
+                    frame_id: gp.id,
+                    stamp: fromDate(new Date()),  // TODO: /clock
+                    seq,
+                },
+                axes: [...gp.axes],
+                buttons: gp.buttons.map(
+                    (button) => (button.pressed ? 1 : 0)
+                ),
+            });
+            setSeq((seq) => seq + 1);
+        }, [gamepad, isReadonly, seq]),
+    });
 
     // Scale the container div to fit the panel
     // TODO Use a ResizeObserver https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
@@ -572,6 +571,11 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
         );
         return () => window.cancelAnimationFrame(resizeAnimRequestId.current);
     }, [resizeAnimationFrame]);
+
+    // Invoke the done callback once the render is complete
+    useEffect(() => {
+        renderDone?.();
+    }, [renderDone]);
 
     return (
         <div style={{width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center"}}>

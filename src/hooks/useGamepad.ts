@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
 
 
-type GamepadListenerProps = Readonly<{
-    onConnect: (gamepad: Gamepad) => void;
-    onDisconnect: (gamepad: Gamepad) => void;
-    onUpdate: (gamepad: Gamepad) => void;
-}>;
-
-
-export function GamepadListener(
-    { onConnect, onDisconnect, onUpdate }: GamepadListenerProps
-): null {
+export function useGamepad(
+    {didConnect, didDisconnect, didUpdate}: {
+        didConnect: (gamepad: Gamepad) => void,
+        didDisconnect: (gamepad: Gamepad) => void,
+        didUpdate: (gamepad: Gamepad) => void,
+    }
+) {
     // MDN says that valid request IDs are non-zero, so we use zero to indicate
     // that there is no pending animation request.
     const animationRequestId = useRef<number>(0);
@@ -20,39 +17,51 @@ export function GamepadListener(
 
         for (const gamepad of navigator.getGamepads()) {
             if (gamepad === null) continue;
-            onUpdate(gamepad);
+            didUpdate(gamepad);
             gamepadCount ++;
         }
 
         // Reschedule for the next animation frame if there are any gamepads
         animationRequestId.current = (gamepadCount === 0) ? 0 :
             window.requestAnimationFrame(onAnimationFrame);
-    }, [onUpdate]);
+    }, [didUpdate]);
 
-    const didConnect = useCallback((event: GamepadEvent) => {
-        onConnect(event.gamepad);
+    // onAnimationFrame reschedules itself, and the reference to itself can
+    // become stale as dependencies change. When this happens, cancel the old
+    // function and schedule the new one. (Thanks Adam!)
+    useEffect(() => {
+        if (animationRequestId.current !== 0) {
+            window.cancelAnimationFrame(animationRequestId.current);
+        }
+
+        animationRequestId.current = 
+            window.requestAnimationFrame(onAnimationFrame);
+    }, [onAnimationFrame]);
+
+    const onConnect = useCallback((event: GamepadEvent) => {
+        didConnect(event.gamepad);
 
         // Schedule an animation frame if there is not already one pending
         if (animationRequestId.current === 0) {
             animationRequestId.current =
                 window.requestAnimationFrame(onAnimationFrame);
         }
-    }, [onConnect, onAnimationFrame]);
+    }, [didConnect, onAnimationFrame]);
 
-    const didDisconnect = useCallback((event: GamepadEvent) => {
-        onDisconnect(event.gamepad);
-    }, [onDisconnect]);
+    const onDisconnect = useCallback((event: GamepadEvent) => {
+        didDisconnect(event.gamepad);
+    }, [didDisconnect]);
 
     // Register event listeners for gamepad connection and disconnection, and
     // unregister them when the component unmounts.
     useEffect(() => {
-        window.addEventListener("gamepadconnected", didConnect);
-        window.addEventListener("gamepaddisconnected", didDisconnect);
+        window.addEventListener("gamepadconnected", onConnect);
+        window.addEventListener("gamepaddisconnected", onDisconnect);
         return () => {
-            window.removeEventListener("gamepadconnected", didConnect);
-            window.removeEventListener("gamepaddisconnected", didDisconnect);
+            window.removeEventListener("gamepadconnected", onConnect);
+            window.removeEventListener("gamepaddisconnected", onDisconnect);
         };
-    }, [didConnect, didDisconnect]);
+    }, [onConnect, onDisconnect]);
 
     // Cancel any pending animation frames when the component unmounts
     useEffect(() => {
@@ -63,6 +72,4 @@ export function GamepadListener(
             }
         };
     }, []);
-
-    return null;
 }
