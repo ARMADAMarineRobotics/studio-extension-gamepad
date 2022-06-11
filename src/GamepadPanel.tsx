@@ -128,17 +128,21 @@ function getNextAxisIndex(config: Config): number {
 function buildSettingsTree(
     config: Config,
     readonly: boolean,
-    topics?: Topic[],
+    topics?: readonly Topic[],
 ): SettingsTreeRoots {
     const generalFields: SettingsTreeFields = {
         topic: {
             label: "Topic",
             input: (readonly ? "select" : "string"),
             value: config.topic,
-            options: (readonly ? topics!.map((topic) => ({
-                label: topic.name,
-                value: topic.name,
-            })) : null),
+            options: (!readonly ? null :
+                (topics ?? [])
+                    .filter((topic) => (topic.datatype === "sensor_msgs/Joy"))
+                    .map((topic) => ({
+                        label: topic.name,
+                        value: topic.name,
+                    }))
+            ),
             error: (!config.topic ? "Topic name is empty" : null),
         },
 
@@ -414,15 +418,11 @@ function GamepadPanel({ context }: PanelProps): JSX.Element {
 
     // Register the settings tree
     useEffect(() => {
-        const joyTopics = (topics ?? []).filter(
-            (topic) => (topic.datatype === "sensor_msgs/Joy")
-        );
-
         (
           context as unknown as EXPERIMENTAL_PanelExtensionContextWithSettings
         ).__updatePanelSettingsTree({
           actionHandler: settingsActionHandler,
-          roots: buildSettingsTree(config, isReadonly, joyTopics),
+          roots: buildSettingsTree(config, isReadonly, topics),
         });
       }, [config, context, isReadonly, settingsActionHandler, topics]);
 
