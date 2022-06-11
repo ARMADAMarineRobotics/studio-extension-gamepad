@@ -14,7 +14,6 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-
     "lib": ["dom"],
 
     // Additional TypeScript error reporting checks are enabled by default to improve code quality.
