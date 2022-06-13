@@ -18,6 +18,9 @@ export function ScaleToFit(
             // Compute scale that fits the parent div at the same aspect ratio
             let scaleFactor = Math.min(ww / cw, wh / ch);
 
+            // Do not allow the scale factor to go below 1%, or we can get stuck
+            scaleFactor = Math.max(scaleFactor, 0.01);
+
             // If this doesn't require a modification, leave it be
             if (Math.abs(scaleFactor - 1.0) <= 0.001)
                 return;
