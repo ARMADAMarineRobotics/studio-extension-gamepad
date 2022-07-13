@@ -5,7 +5,7 @@
   "publisher": "ARMADA Marine Robotics",
   "homepage": "https://github.com/armadamarinerobotics/studio-extension-gamepad",
   "version": "0.0.0",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "./dist/extension.js",
   "keywords": [],
   "scripts": {
